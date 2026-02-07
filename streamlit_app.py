@@ -5,43 +5,52 @@ from datetime import datetime
 
 # Page configuration
 st.set_page_config(
-    page_title="MSP Control Center",
-    page_icon="⚙️",
+    page_title="MSP Enbox Manager",
+    page_icon="📧",
     layout="wide"
 )
 
-# Custom CSS for MSP Control Center styling
+# Custom CSS for better styling
 st.markdown("""
     <style>
     .main-header {
-        font-size: 2rem;
+        font-size: 2.5rem;
         font-weight: bold;
-        color: #1a1a1a;
+        color: #1f77b4;
         margin-bottom: 0.5rem;
     }
     .sub-header {
-        font-size: 1rem;
+        font-size: 1.2rem;
         color: #666;
-        margin-bottom: 1.5rem;
+        margin-bottom: 2rem;
     }
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 2px;
+    .success-box {
+        padding: 1rem;
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        border-radius: 0.25rem;
+        color: #155724;
     }
-    .stTabs [data-baseweb="tab"] {
-        padding: 10px 20px;
-        background-color: #f0f2f6;
-        border-radius: 4px 4px 0 0;
+    .error-box {
+        padding: 1rem;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: 0.25rem;
+        color: #721c24;
     }
-    .stTabs [aria-selected="true"] {
-        background-color: white;
-        border-bottom: 2px solid #1f77b4;
+    .info-box {
+        padding: 1rem;
+        background-color: #d1ecf1;
+        border: 1px solid #bee5eb;
+        border-radius: 0.25rem;
+        color: #0c5460;
     }
     </style>
 """, unsafe_allow_html=True)
 
 # Title and description
-st.markdown('<div class="main-header">MSP Control Center</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Manage your customer Enboxes and API access</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">📧 MSP Enbox Manager</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">Programmatically manage your customer Enboxes</div>', unsafe_allow_html=True)
 
 # API Configuration
 API_BASE_URL = "https://vwhxcuylitpawxjplfnq.supabase.co/functions/v1/msp-gateway"
@@ -83,61 +92,12 @@ def make_api_request(method, endpoint, data=None):
     except Exception as e:
         return None, str(e)
 
-# Create tabs matching the MSP Control Center design
-tab1, tab2, tab3 = st.tabs(["⚙️ Manage Enboxes", "➕ Create Enboxes", "📋 Enbox MSP API"])
+# Sidebar for navigation
+st.sidebar.title("Navigation")
+page = st.sidebar.radio("Select Action", ["Create Enbox", "List Enboxes", "API Documentation"])
 
-# Tab 1: Manage Enboxes
-with tab1:
-    st.header("Managed Enboxes")
-    
-    col1, col2 = st.columns([3, 1])
-    
-    with col2:
-        if st.button("🔄 Refresh List", use_container_width=True):
-            st.rerun()
-    
-    with st.spinner("Fetching Enboxes..."):
-        response, error = make_api_request("GET", "/enboxes")
-        
-        if error:
-            st.error(f"❌ Error: {error}")
-        elif response:
-            if response.status_code == 200:
-                try:
-                    enboxes = response.json()
-                    
-                    if isinstance(enboxes, list):
-                        if len(enboxes) == 0:
-                            st.info("📭 No Enboxes found. Create your first one using the 'Create Enboxes' tab.")
-                        else:
-                            st.success(f"✅ Found {len(enboxes)} Enbox(es)")
-                            
-                            # Display as table
-                            for idx, enbox in enumerate(enboxes, 1):
-                                with st.expander(f"📧 {enbox.get('email', 'Unknown')} - {enbox.get('display_name', 'N/A')}", expanded=False):
-                                    cols = st.columns(2)
-                                    
-                                    with cols[0]:
-                                        st.write("**Email:**", enbox.get('email', 'N/A'))
-                                        st.write("**Display Name:**", enbox.get('display_name', 'N/A'))
-                                    
-                                    with cols[1]:
-                                        st.write("**Created Via:**", enbox.get('create_via', 'N/A'))
-                                        if 'created_at' in enbox:
-                                            st.write("**Created:**", enbox['created_at'])
-                                    
-                                    st.json(enbox)
-                    else:
-                        st.json(enboxes)
-                        
-                except Exception as e:
-                    st.error(f"Error parsing response: {e}")
-                    st.write(response.text)
-            else:
-                st.error(f"❌ Error {response.status_code}: {response.text}")
-
-# Tab 2: Create Enboxes
-with tab2:
+# Create Enbox Page
+if page == "Create Enbox":
     st.header("Create New Managed Enbox")
     
     col1, col2 = st.columns([2, 1])
@@ -256,50 +216,101 @@ with tab2:
         - Verify email format
         """)
 
-# Tab 3: Enbox MSP API Documentation
-with tab3:
-    st.header("MSP API Documentation")
+# List Enboxes Page
+elif page == "List Enboxes":
+    st.header("Managed Enboxes")
     
-    st.markdown("Use these endpoints to programmatically manage your customer Enboxes")
+    col1, col2 = st.columns([3, 1])
     
-    st.markdown("---")
+    with col2:
+        if st.button("🔄 Refresh List", use_container_width=True):
+            st.rerun()
     
-    st.subheader("Authentication")
+    with st.spinner("Fetching Enboxes..."):
+        response, error = make_api_request("GET", "/enboxes")
+        
+        if error:
+            st.error(f"❌ Error: {error}")
+        elif response:
+            if response.status_code == 200:
+                try:
+                    enboxes = response.json()
+                    
+                    if isinstance(enboxes, list):
+                        if len(enboxes) == 0:
+                            st.info("📭 No Enboxes found. Create your first one using the 'Create Enbox' page.")
+                        else:
+                            st.success(f"✅ Found {len(enboxes)} Enbox(es)")
+                            
+                            # Display as table
+                            for idx, enbox in enumerate(enboxes, 1):
+                                with st.expander(f"📧 {enbox.get('email', 'Unknown')} - {enbox.get('display_name', 'N/A')}"):
+                                    cols = st.columns(2)
+                                    
+                                    with cols[0]:
+                                        st.write("**Email:**", enbox.get('email', 'N/A'))
+                                        st.write("**Display Name:**", enbox.get('display_name', 'N/A'))
+                                    
+                                    with cols[1]:
+                                        st.write("**Created Via:**", enbox.get('create_via', 'N/A'))
+                                        if 'created_at' in enbox:
+                                            st.write("**Created:**", enbox['created_at'])
+                                    
+                                    st.json(enbox)
+                    else:
+                        st.json(enboxes)
+                        
+                except Exception as e:
+                    st.error(f"Error parsing response: {e}")
+                    st.write(response.text)
+            else:
+                st.error(f"❌ Error {response.status_code}: {response.text}")
+
+# API Documentation Page
+else:
+    st.header("API Documentation")
     
-    st.markdown(f"Include your MSP API key in the `x-msp-api-key` header.")
+    st.markdown("""
+    ### Authentication
     
-    st.code("""curl -H "x-msp-api-key: msp_your_key_here" \\
-  https://vwhxcuylitpawxjplfnq.supabase.co/functions/v1/msp-gateway/enboxes""", language="bash")
+    Include your MSP API key in the `x-msp-api-key` header.
+    """)
+    
+    st.code("""
+curl -H "x-msp-api-key: msp_your_key_here" \\
+  https://vwhxcuylitpawxjplfnq.supabase.co/functions/v1/msp-gateway/enboxes
+    """, language="bash")
     
     st.markdown("---")
     
     st.subheader("Endpoints")
     
     # GET /enboxes
-    st.markdown("### GET `/enboxes`")
-    st.markdown("**List all your managed Enboxes**")
-    
-    with st.expander("View details", expanded=False):
-        st.code("""curl -H "x-msp-api-key: msp_your_key_here" \\
-  https://vwhxcuylitpawxjplfnq.supabase.co/functions/v1/msp-gateway/enboxes""", language="bash")
-    
-    st.markdown("---")
+    with st.expander("GET /enboxes - List all managed Enboxes"):
+        st.markdown("**Description:** Retrieve a list of all your managed Enboxes")
+        
+        st.code("""
+curl -H "x-msp-api-key: msp_your_key_here" \\
+  https://vwhxcuylitpawxjplfnq.supabase.co/functions/v1/msp-gateway/enboxes
+        """, language="bash")
     
     # POST /enboxes
-    st.markdown("### POST `/enboxes`")
-    st.markdown("**Create a new managed Enbox**")
-    
-    with st.expander("View details", expanded=True):
+    with st.expander("POST /enboxes - Create a new managed Enbox"):
+        st.markdown("**Description:** Create a new managed Enbox account")
+        
         st.markdown("**Request Body:**")
-        st.code("""{
+        st.code("""
+{
   "email": "customer@example.com",
   "password": "securepass123",  // Only for create_via: "direct"
   "display_name": "Customer Name",
   "create_via": "direct" | "invite"
-}""", language="json")
+}
+        """, language="json")
         
-        st.markdown("**Example:**")
-        st.code("""curl -X POST \\
+        st.markdown("**Example cURL:**")
+        st.code("""
+curl -X POST \\
   -H "x-msp-api-key: msp_your_key_here" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -308,4 +319,29 @@ with tab3:
     "display_name": "Customer Name",
     "create_via": "direct"
   }' \\
-  https://vwhxcuylitpawxjplfnq.supabase.co/functions/v1/msp-gateway/enboxes""", language="bash")
+  https://vwhxcuylitpawxjplfnq.supabase.co/functions/v1/msp-gateway/enboxes
+        """, language="bash")
+    
+    st.markdown("---")
+    
+    st.subheader("Configuration")
+    
+    st.markdown("""
+    This application uses Streamlit secrets for API key management. 
+    
+    Create a file `.streamlit/secrets.toml` with:
+    """)
+    
+    st.code("""
+[msp]
+api_key = "msp_your_key_here"
+    """, language="toml")
+
+# Footer
+st.sidebar.markdown("---")
+st.sidebar.markdown("""
+    <div style='text-align: center; color: #666; font-size: 0.8rem;'>
+        <p>MSP Enbox Manager v1.0</p>
+        <p>Manage your customer Enboxes efficiently</p>
+    </div>
+""", unsafe_allow_html=True)
