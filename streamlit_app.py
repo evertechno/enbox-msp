@@ -5,7 +5,7 @@ import requests
 st.set_page_config(page_title="MSP Enbox Manager", page_icon="✉️")
 
 # API Constants
-API_URL = "https://vwhxcuylitpawxjplfnq.supabase.co/functions/v1/msp-gateway/enboxes"
+API_URL = "https://vwhxcuylitpawxjplfnq.supabase.co/functions/v1/msp-gateway"
 HEADERS = {
     "x-msp-api-key": st.secrets["MSP_API_KEY"],
     "Content-Type": "application/json"
