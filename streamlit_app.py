@@ -45,7 +45,7 @@ st.markdown('<div class="sub-header">Manage your customer Enboxes and API access
 
 # API Configuration
 API_BASE_URL = "https://kjqgxfeadjlpomgseets.supabase.co/functions/v1/msp-api"
-SEND_EMAIL_URL = "https://kjqgxfeadjlpomgseets.supabase.co/functions/v1/send-email"
+API_PLAYGROUND_URL = "https://kjqgxfeadjlpomgseets.supabase.co/functions/v1/api-playground"
 
 def get_api_key():
     """Get API key from Streamlit secrets"""
@@ -96,8 +96,8 @@ def make_api_request(action, data=None):
     except Exception as e:
         return None, str(e)
 
-def send_email(email_data):
-    """Send email via Enbox API"""
+def send_email_via_playground(email_data):
+    """Send email via API Playground"""
     access_token = get_access_token()
     if not access_token:
         return None, "Access token not configured"
@@ -108,7 +108,14 @@ def send_email(email_data):
     }
     
     try:
-        response = requests.post(SEND_EMAIL_URL, headers=headers, json=email_data)
+        # Prepare the API playground payload
+        payload = {
+            "endpoint": "send-email",
+            "method": "POST",
+            "body": email_data
+        }
+        
+        response = requests.post(API_PLAYGROUND_URL, headers=headers, json=payload)
         return response, None
     except Exception as e:
         return None, str(e)
@@ -379,31 +386,35 @@ with tab3:
             # Additional options
             st.subheader("Options")
             
-            col_a, col_b = st.columns(2)
+            col_a, col_b, col_c = st.columns(3)
             
             with col_a:
-                send_via = st.selectbox(
-                    "Send Via",
-                    options=["enbox", "smtp"],
-                    help="Select sending method"
+                priority = st.selectbox(
+                    "Priority",
+                    options=["normal", "low", "high", "urgent"],
+                    help="Email priority level"
                 )
-                
+            
+            with col_b:
                 read_receipt = st.checkbox(
                     "Request Read Receipt",
                     help="Request read receipt notification"
                 )
             
-            with col_b:
+            with col_c:
                 schedule_email = st.checkbox(
                     "Schedule Email",
                     help="Schedule email for later delivery"
                 )
-                
-                scheduled_at = None
-                if schedule_email:
+            
+            scheduled_at = None
+            if schedule_email:
+                col_d, col_e = st.columns(2)
+                with col_d:
                     schedule_date = st.date_input("Schedule Date")
+                with col_e:
                     schedule_time = st.time_input("Schedule Time")
-                    scheduled_at = f"{schedule_date}T{schedule_time}:00Z"
+                scheduled_at = f"{schedule_date}T{schedule_time}:00Z"
             
             st.markdown("---")
             send_submitted = st.form_submit_button("📤 Send Email", use_container_width=True)
@@ -431,11 +442,11 @@ with tab3:
                     for error in errors:
                         st.error(f"❌ {error}")
                 else:
-                    # Prepare email payload
+                    # Prepare email payload for API playground
                     email_payload = {
                         "to": [email.strip() for email in to_emails.split('\n') if email.strip()],
                         "subject": subject,
-                        "send_via": send_via,
+                        "priority": priority,
                         "read_receipt_requested": read_receipt
                     }
                     
@@ -458,20 +469,29 @@ with tab3:
                     if schedule_email and scheduled_at:
                         email_payload["scheduled_at"] = scheduled_at
                     
-                    # Send email
+                    # Send email via API playground
                     with st.spinner("Sending email..."):
-                        response, error = send_email(email_payload)
+                        response, error = send_email_via_playground(email_payload)
                         
                         if error:
                             st.error(f"❌ Error: {error}")
                         elif response:
-                            if response.status_code in [200, 201]:
+                            if response.status_code == 200:
                                 st.success("✅ Email sent successfully!")
                                 
                                 # Display response data
                                 try:
                                     result = response.json()
-                                    st.json(result)
+                                    
+                                    # Check if there's nested data
+                                    if 'data' in result:
+                                        st.json(result['data'])
+                                    else:
+                                        st.json(result)
+                                    
+                                    # Show rate limit info if available
+                                    if 'rate_limit' in result:
+                                        st.info(f"📊 Rate Limit: {result['rate_limit']['remaining']}/{result['rate_limit']['total']} remaining")
                                 except:
                                     st.write(response.text)
                                 
@@ -487,15 +507,18 @@ with tab3:
         - Enter one email per line
         - TO is required
         - CC/BCC are optional
+        - Supports @enbox addresses
         
         **Format Options:**
         - Plain Text: Simple text
         - HTML: Rich formatted
         - Both: Best compatibility
         
-        **Send Via:**
-        - enbox: Native delivery
-        - smtp: Traditional SMTP
+        **Priority Levels:**
+        - Low: Non-urgent emails
+        - Normal: Standard priority
+        - High: Important emails
+        - Urgent: Critical emails
         
         **Scheduling:**
         - Optional future delivery
@@ -505,25 +528,26 @@ with tab3:
         - Test with plain text first
         - Verify recipient addresses
         - Use read receipts wisely
+        - Check priority before sending
         """)
 
 # Tab 4: Enbox MSP API Documentation
 with tab4:
     st.header("MSP API Documentation")
     
-    st.markdown("How to use the MSP API")
+    st.markdown("How to use the MSP API and API Playground")
     
     st.markdown("---")
     
     st.subheader("# Base URLs")
     st.code("MSP API: POST /functions/v1/msp-api", language="")
-    st.code("Send Email: POST /functions/v1/send-email", language="")
+    st.code("API Playground: POST /functions/v1/api-playground", language="")
     
     st.subheader("# Headers")
     st.markdown("**MSP API:**")
     st.code("X-MSP-API-Key: your_api_key", language="")
     
-    st.markdown("**Send Email API:**")
+    st.markdown("**API Playground:**")
     st.code("Authorization: Bearer YOUR_ACCESS_TOKEN", language="")
     
     st.markdown("---")
@@ -581,36 +605,94 @@ with tab4:
     
     st.markdown("---")
     
-    st.subheader("Example: Send Email")
+    st.subheader("# API Playground Endpoints")
     
-    st.code("""{
-  "to": ["recipient@enbox"],
-  "cc": ["cc@enbox"],
-  "bcc": ["bcc@enbox"],
-  "subject": "Email subject",
-  "body_text": "Plain text content",
-  "body_html": "<p>HTML content</p>",
-  "send_via": "enbox",
-  "scheduled_at": "2024-01-01T00:00:00Z",
-  "read_receipt_requested": false
-}""", language="json")
+    st.markdown("""
+    The API Playground supports these endpoints:
+    - **send-email:** Send emails via EnBox
+    - **list-emails:** List emails in folders
+    - **get-email:** Get email details
+    - **mark-email:** Mark emails (read/starred/important)
+    - **recall-email:** Recall sent emails
+    - **list-contacts:** List contacts
+    - **create-contact:** Create new contact
+    - **update-contact:** Update contact
+    - **delete-contact:** Delete contact
+    - **list-events:** List calendar events
+    - **create-event:** Create calendar event
+    - **update-event:** Update event
+    - **delete-event:** Delete event
+    - **list-templates:** List email templates
+    - **create-template:** Create template
+    - **delete-template:** Delete template
+    - **list-vault-files:** List vault files
+    - **get-vault-file:** Get vault file with download URL
+    - **delete-vault-file:** Delete vault file
+    - **vault-stats:** Get vault statistics
+    - **list-labels:** List labels
+    - **create-label:** Create label
+    - **delete-label:** Delete label
+    - **list-blocked-senders:** List blocked senders
+    - **block-sender:** Block a sender
+    - **unblock-sender:** Unblock a sender
+    - **get-profile:** Get user profile
+    - **update-profile:** Update user profile
+    """)
     
     st.markdown("---")
     
-    st.subheader("Full cURL Example (Send Email)")
+    st.subheader("Example: Send Email via API Playground")
     
-    st.code("""curl -X POST \\
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \\
-  -H "Content-Type: application/json" \\
-  -d '{
+    st.code("""{
+  "endpoint": "send-email",
+  "method": "POST",
+  "body": {
     "to": ["recipient@enbox"],
     "cc": ["cc@enbox"],
     "bcc": ["bcc@enbox"],
     "subject": "Email subject",
     "body_text": "Plain text content",
     "body_html": "<p>HTML content</p>",
-    "send_via": "enbox",
-    "scheduled_at": "2024-01-01T00:00:00Z",
+    "priority": "normal",
     "read_receipt_requested": false
+  }
+}""", language="json")
+    
+    st.markdown("---")
+    
+    st.subheader("Full cURL Example (Send Email via API Playground)")
+    
+    st.code("""curl -X POST \\
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "endpoint": "send-email",
+    "method": "POST",
+    "body": {
+      "to": ["recipient@enbox"],
+      "subject": "Test Email",
+      "body_text": "Hello from API Playground",
+      "priority": "normal"
+    }
   }' \\
-  https://kjqgxfeadjlpomgseets.supabase.co/functions/v1/send-email""", language="bash")
+  https://kjqgxfeadjlpomgseets.supabase.co/functions/v1/api-playground""", language="bash")
+    
+    st.markdown("---")
+    
+    st.subheader("Example: List Emails")
+    
+    st.code("""{
+  "endpoint": "list-emails",
+  "params": {
+    "folder": "inbox",
+    "limit": 10
+  }
+}""", language="json")
+    
+    st.markdown("---")
+    
+    st.subheader("Example: Get Profile")
+    
+    st.code("""{
+  "endpoint": "get-profile"
+}""", language="json")
