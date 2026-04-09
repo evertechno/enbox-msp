@@ -563,7 +563,7 @@ with tab4:
     "password": "securePassword123",
     "display_name": "Customer Name"
   }' \\
-  https://cmwvwqbrnxgofinkeevm.supabase.co/functions/v1/msp-api""", language="bash")
+  https://kjqgxfeadjlpomgseets.supabase.co/functions/v1/msp-api""", language="bash")
     
     st.markdown("---")
     
@@ -577,7 +577,7 @@ with tab4:
   -H "X-MSP-API-Key: your_api_key" \\
   -H "Content-Type: application/json" \\
   -d '{"action": "list_enboxes"}' \\
-  https://cmwvwqbrnxgofinkeevm.supabase.co/functions/v1/msp-api""", language="bash")
+  https://kjqgxfeadjlpomgseets.supabase.co/functions/v1/msp-api""", language="bash")
     
     st.markdown("---")
     
@@ -613,4 +613,4 @@ with tab4:
     "scheduled_at": "2024-01-01T00:00:00Z",
     "read_receipt_requested": false
   }' \\
-  https://cmwvwqbrnxgofinkeevm.supabase.co/functions/v1/send-email""", language="bash")
+  https://kjqgxfeadjlpomgseets.supabase.co/functions/v1/send-email""", language="bash")
