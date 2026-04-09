@@ -44,8 +44,8 @@ st.markdown('<div class="main-header">MSP Control Center</div>', unsafe_allow_ht
 st.markdown('<div class="sub-header">Manage your customer Enboxes and API access</div>', unsafe_allow_html=True)
 
 # API Configuration
-API_BASE_URL = "https://cmwvwqbrnxgofinkeevm.supabase.co/functions/v1/msp-api"
-SEND_EMAIL_URL = "https://cmwvwqbrnxgofinkeevm.supabase.co/functions/v1/send-email"
+API_BASE_URL = "https://kjqgxfeadjlpomgseets.supabase.co/functions/v1/msp-api"
+SEND_EMAIL_URL = "https://kjqgxfeadjlpomgseets.supabase.co/functions/v1/send-email"
 
 def get_api_key():
     """Get API key from Streamlit secrets"""
